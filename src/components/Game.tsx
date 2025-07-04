@@ -23,6 +23,103 @@ export default class GameScene extends Phaser.Scene {
   private failImg!: Phaser.GameObjects.Image;
   private retryButton!: Phaser.GameObjects.Text;
 
+  private resetGame() {
+    this.frog?.destroy();
+    this.wordGroup?.clear(true, true);
+    this.topicText?.destroy();
+    this.scoreText?.destroy();
+    this.successImg.setVisible(false);
+    this.failImg.setVisible(false);
+    this.nextButton.setVisible(false);
+    this.retryButton.setVisible(false);
+
+    this.hearts.forEach((heart) => heart.destroy());
+    this.hearts = [];
+
+    this.score = 0;
+    this.mistakeCount = 0;
+    this.gameEnded = false;
+
+    this.createGameContent();
+  }
+
+  private createGameContent() {
+    const { width, height } = this.sys.game.canvas;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    this.frog = this.add.sprite(centerX, centerY + 200, "frog");
+    this.frog.setOrigin(0.5).setScale(0.4);
+
+    const wordData = this.cache.json.get("wordData") as WordSet[];
+    this.currentTopic = Phaser.Utils.Array.GetRandom(wordData);
+
+    this.topicText = this.add
+      .text(centerX, 20, `주제: ${this.currentTopic.topic}`, {
+        fontSize: "48px",
+        color: "#c92b2b",
+        padding: { top: 10, bottom: 10 },
+      })
+      .setOrigin(0.5, 0);
+
+    this.scoreText = this.add.text(300, 40, `점수: ${this.score}`, {
+      fontSize: "32px",
+      color: "#ffff00",
+      padding: { top: 10, bottom: 10 },
+    });
+
+    const returnBtn = this.add
+      .image(120, 60, "returnBtn")
+      .setOrigin(0.5)
+      .setScale(0.2)
+      .setInteractive({ useHandCursor: true });
+
+    returnBtn.on("pointerdown", () => {
+      window.location.href = "/";
+    });
+
+    this.wordGroup = this.add.group();
+
+    const allWords = [
+      ...this.currentTopic.correctWords.map((text) => ({
+        text,
+        correct: true,
+      })),
+      ...this.currentTopic.wrongWords.map((text) => ({ text, correct: false })),
+    ];
+    Phaser.Utils.Array.Shuffle(allWords);
+
+    allWords.forEach(({ text, correct }) => {
+      const x = Phaser.Math.Between(50, width - 150);
+      const y = Phaser.Math.Between(100, height - 100);
+
+      const label = this.add
+        .text(0, 0, text, {
+          fontSize: "28px",
+          color: "#000000",
+        })
+        .setOrigin(0.5);
+
+      const bubble = this.add.image(0, 0, "textBubble").setOrigin(0.5);
+      bubble.setDisplaySize(label.width + 90, label.height + 80);
+
+      const container = this.add.container(x, y, [bubble, label]);
+      container.setSize(bubble.displayWidth, bubble.displayHeight);
+      container.setData("correct", correct);
+      container.setData("dx", Phaser.Math.FloatBetween(-0.3, 0.3));
+      container.setData("dy", Phaser.Math.FloatBetween(-0.3, 0.3));
+      this.wordGroup!.add(container);
+    });
+
+    for (let i = 0; i < 3; i++) {
+      const heart = this.add
+        .image(width - 50 - i * 60, 50, "heart")
+        .setScale(0.05)
+        .setScrollFactor(0);
+      this.hearts.push(heart);
+    }
+  }
+
   constructor() {
     super({ key: "GameScene" });
   }
@@ -47,7 +144,6 @@ export default class GameScene extends Phaser.Scene {
     const { width, height } = this.sys.game.canvas;
     const centerX = width / 2;
     const centerY = height / 2;
-
     const bg = this.add.image(centerX, centerY, "background");
     bg.setDisplaySize(width, height);
 
@@ -192,7 +288,7 @@ export default class GameScene extends Phaser.Scene {
       .setVisible(false);
 
     this.retryButton.on("pointerdown", () => {
-      this.scene.restart();
+      this.resetGame();
     });
   }
 

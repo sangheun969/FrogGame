@@ -1,15 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
+import Menu from "./Menu";
 import { useNavigate } from "react-router-dom";
 
 const MainStart: React.FC = () => {
   const navigate = useNavigate();
+  const [showMenu, setShowMenu] = useState(false);
 
   const handleStartClick = () => {
     navigate("/game");
   };
 
   const handleMenuClick = () => {
-    console.log("메뉴 시작!");
+    setShowMenu(true);
+  };
+
+  const handleCloseMenu = () => {
+    setShowMenu(false);
   };
 
   return (
@@ -33,6 +39,8 @@ const MainStart: React.FC = () => {
           className="w-full h-full object-contain hover:scale-105 transition-transform duration-600"
         />
       </button>
+
+      {showMenu && <Menu onClose={handleCloseMenu} />}
     </div>
   );
 };
